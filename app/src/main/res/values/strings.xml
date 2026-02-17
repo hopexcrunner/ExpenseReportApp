@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Avant Expense Report</string>
+    <string name="capture_receipt">Capture Receipt</string>
+    <string name="processing">Processing receipt…</string>
+    <string name="receipt_captured">Receipt captured successfully!</string>
+    <string name="camera_permission_required">Camera permission is required to capture receipts</string>
+    <string name="email_subject">Expense Report Submission</string>
+</resources>
