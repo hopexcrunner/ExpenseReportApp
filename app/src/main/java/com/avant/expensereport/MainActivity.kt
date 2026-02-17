@@ -144,6 +144,18 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val bitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
+                if (bitmap == null) {
+                    withContext(Dispatchers.Main) {
+                        binding.tvStatus.text = "Error: Failed to load image"
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Failed to load image. Please try again.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    return@launch
+                }
+                
                 val receiptData = extractTextFromImage(bitmap)
                 
                 withContext(Dispatchers.Main) {
