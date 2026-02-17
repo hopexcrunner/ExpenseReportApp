@@ -157,12 +157,33 @@ class MainActivity : AppCompatActivity() {
                     throw Exception("Image file does not exist: ${imageFile.absolutePath}")
                 }
                 
-                val bitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
+                // Decode bitmap on IO thread to avoid StrictMode violations on Android 13+
+                // Also optimize bitmap size to prevent OutOfMemoryError
+                val bitmap = withContext(Dispatchers.IO) {
+                    val options = BitmapFactory.Options().apply {
+                        // First decode to get dimensions
+                        inJustDecodeBounds = true
+                    }
+                    BitmapFactory.decodeFile(imageFile.absolutePath, options)
+                    
+                    // Calculate inSampleSize to reduce memory usage
+                    // Max dimension for OCR: 2048px is sufficient
+                    val maxDimension = 2048
+                    options.inSampleSize = calculateInSampleSize(options, maxDimension, maxDimension)
+                    options.inJustDecodeBounds = false
+                    
+                    // Now decode the actual bitmap
+                    BitmapFactory.decodeFile(imageFile.absolutePath, options)
+                }
+                
                 if (bitmap == null) {
                     throw Exception("Failed to decode image file")
                 }
                 
                 val receiptData = extractTextFromImage(bitmap)
+                
+                // Clean up bitmap to free memory
+                bitmap.recycle()
                 
                 withContext(Dispatchers.Main) {
                     binding.tvStatus.text = "Receipt processed!"
@@ -185,17 +206,52 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    private fun calculateInSampleSize(
+        options: BitmapFactory.Options,
+        reqWidth: Int,
+        reqHeight: Int
+    ): Int {
+        val height = options.outHeight
+        val width = options.outWidth
+        var inSampleSize = 1
+        
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight = height / 2
+            val halfWidth = width / 2
+            
+            while (halfHeight / inSampleSize >= reqHeight && 
+                   halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        
+        return inSampleSize
+    }
+    
     private suspend fun extractTextFromImage(bitmap: Bitmap): ReceiptData = 
         withContext(Dispatchers.IO) {
-            val image = InputImage.fromBitmap(bitmap, 0)
-            val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-            
-            val result = com.google.android.gms.tasks.Tasks.await(
-                recognizer.process(image)
-            )
-            
-            val text = result.text
-            ReceiptParser.parseReceipt(text)
+            try {
+                val image = InputImage.fromBitmap(bitmap, 0)
+                val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+                
+                val result = com.google.android.gms.tasks.Tasks.await(
+                    recognizer.process(image)
+                )
+                
+                val text = result.text
+                
+                if (text.isBlank()) {
+                    throw Exception("No text detected in image. Please try again with better lighting.")
+                }
+                
+                ReceiptParser.parseReceipt(text)
+            } catch (e: com.google.android.gms.common.api.ApiException) {
+                // ML Kit specific error
+                throw Exception("ML Kit error: ${e.message}. Please ensure Google Play Services is updated.")
+            } catch (e: Exception) {
+                // Re-throw with more context
+                throw Exception("Text extraction failed: ${e.message}", e)
+            }
         }
     
     private fun displayReceiptData(data: ReceiptData) {
