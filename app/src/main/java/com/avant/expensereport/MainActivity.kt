@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -62,19 +63,27 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun checkPermissions(): Boolean {
-        return ContextCompat.checkSelfPermission(
+        val cameraPermission = ContextCompat.checkSelfPermission(
             this, Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
+        
+        // For Android 13+ (API 33+), we don't need storage permissions for our use case
+        // because we're using app-specific directories (getExternalFilesDir, filesDir)
+        return cameraPermission
     }
     
     private fun requestPermissions() {
-        requestPermissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.CAMERA,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            )
-        )
+        val permissionsToRequest = mutableListOf(Manifest.permission.CAMERA)
+        
+        // Only request storage permissions on Android 12 and below
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
+            permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                permissionsToRequest.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        }
+        
+        requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
     }
     
     private fun startCamera() {
@@ -143,7 +152,16 @@ class MainActivity : AppCompatActivity() {
         
         lifecycleScope.launch {
             try {
+                // Verify the file exists and is readable
+                if (!imageFile.exists()) {
+                    throw Exception("Image file does not exist: ${imageFile.absolutePath}")
+                }
+                
                 val bitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
+                if (bitmap == null) {
+                    throw Exception("Failed to decode image file")
+                }
+                
                 val receiptData = extractTextFromImage(bitmap)
                 
                 withContext(Dispatchers.Main) {
@@ -154,6 +172,7 @@ class MainActivity : AppCompatActivity() {
                     fillExpenseReport(receiptData, imageFile)
                 }
             } catch (e: Exception) {
+                e.printStackTrace() // Log to logcat
                 withContext(Dispatchers.Main) {
                     binding.tvStatus.text = "Error: ${e.message}"
                     Toast.makeText(
@@ -197,6 +216,13 @@ class MainActivity : AppCompatActivity() {
             try {
                 // Copy template from assets
                 val templateFile = File(filesDir, "expense_template.xlsx")
+                
+                // Check if asset exists
+                val assetList = assets.list("") ?: emptyArray()
+                if (!assetList.contains("Avant_2026_Expense_Report_Form.xlsx")) {
+                    throw Exception("Template file not found in assets")
+                }
+                
                 assets.open("Avant_2026_Expense_Report_Form.xlsx").use { input ->
                     FileOutputStream(templateFile).use { output ->
                         input.copyTo(output)
@@ -217,6 +243,7 @@ class MainActivity : AppCompatActivity() {
                     createEmailDraft(receiptImage, outputFile)
                 }
             } catch (e: Exception) {
+                e.printStackTrace() // Log to logcat
                 withContext(Dispatchers.Main) {
                     binding.tvStatus.text = "Error creating report: ${e.message}"
                     Toast.makeText(
@@ -273,7 +300,9 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun getOutputDirectory(): File {
-        val mediaDir = externalMediaDirs.firstOrNull()?.let {
+        // Use app-specific directory that doesn't require storage permissions
+        // This works on all Android versions including Android 13+
+        val mediaDir = getExternalFilesDir(null)?.let {
             File(it, resources.getString(R.string.app_name)).apply { mkdirs() }
         }
         return if (mediaDir != null && mediaDir.exists()) mediaDir else filesDir
