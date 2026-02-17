@@ -1,8 +1,20 @@
 # 🚀 QUICK START: Testing Your App on Google Pixel 6a
 
+## ⚡ FAST TRACK: If You Have Android Studio Open
+
+**Do you have Android Studio open with your device connected?**
+
+👉 **[Skip all steps - Click here: ANDROID_STUDIO_ADB_CONFLICT.md](ANDROID_STUDIO_ADB_CONFLICT.md)** 👈
+
+**TL;DR:** Just use Android Studio's built-in Terminal tab at the bottom! Run the script there. Done! ✅
+
+---
+
 ## ❓ Where Do I Run The Script?
 
 **Run it in your PC's Command Prompt or Terminal** - NOT in Android Studio, NOT on GitHub!
+
+**OR** use Android Studio's built-in Terminal (see link above).
 
 ---
 
@@ -156,6 +168,19 @@ If you see this, check your USB connection and phone settings.
 **Problem:** You didn't accept the USB debugging prompt
 
 **Solution:**
+1. Look at your Pixel 6a screen
+2. You should see "Allow USB debugging?" prompt
+3. Check "Always allow from this computer"
+4. Tap "Allow"
+5. Try running the script again
+
+### Android Studio is open and device connected there, but adb doesn't see it
+
+**Problem:** Android Studio's adb server is using the device connection
+
+**Solution:** This is VERY common! See **[ANDROID_STUDIO_ADB_CONFLICT.md](ANDROID_STUDIO_ADB_CONFLICT.md)** for detailed solutions.
+
+**Quick fix:** Just use Android Studio's built-in Terminal tab at the bottom instead of Command Prompt!
 1. Look at your Pixel 6a screen
 2. You should see "Allow USB debugging?" prompt
 3. Check "Always allow from this computer"

@@ -10,6 +10,12 @@ An Android application that uses OCR (Optical Character Recognition) to automati
 
 This guide explains exactly WHERE and HOW to run the diagnostic scripts (spoiler: in your PC's Command Prompt/Terminal, not Android Studio!)
 
+**🔧 Android Studio open and device connected there?**
+
+👉 **[Android Studio ADB Conflict Solution](ANDROID_STUDIO_ADB_CONFLICT.md)** 👈
+
+Your phone settings are fine! Just use Android Studio's built-in Terminal. Easy fix!
+
 ## Features
 
 - **Camera Integration**: Capture receipt photos directly in the app
