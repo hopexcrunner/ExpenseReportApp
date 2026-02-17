@@ -33,6 +33,8 @@ Your Google Pixel 6a is **not yet connected** to adb. Let's get it connected to 
 
 ### Quick Connection Steps
 
+**⚠️ IMPORTANT: Run these commands in your PC's Command Prompt or Terminal, NOT in Android Studio!**
+
 1. **On your Pixel 6a:**
    - Settings → About phone → Tap "Build number" 7 times
    - Settings → System → Developer options → Enable "USB debugging"
@@ -41,7 +43,7 @@ Your Google Pixel 6a is **not yet connected** to adb. Let's get it connected to 
 
 3. **Accept the prompt** on your phone: "Allow USB debugging?"
 
-4. **Test connection:**
+4. **Test connection (run in Command Prompt/Terminal on your PC):**
    ```bash
    cd /path/to/ExpenseReportApp
    adb devices
@@ -53,12 +55,21 @@ Your Google Pixel 6a is **not yet connected** to adb. Let's get it connected to 
    1234567890ABCDEF    device
    ```
 
+**Not sure where to start? See [QUICK_START_GUIDE.md](QUICK_START_GUIDE.md) for detailed instructions!**
+
 ## 🚀 Test the Fixed App
 
 ### Option A: Automated (Recommended)
 
+**Open Command Prompt (Windows) or Terminal (Mac/Linux) on your PC:**
+
 ```bash
 cd /path/to/ExpenseReportApp
+
+# Windows:
+diagnose_crash.bat
+
+# Mac/Linux:
 ./diagnose_crash.sh
 ```
 
