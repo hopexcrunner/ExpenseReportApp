@@ -2,6 +2,20 @@
 
 An Android application that uses OCR (Optical Character Recognition) to automatically extract data from receipt photos and populate Excel expense reports. The app then creates an email draft with both the original receipt and completed expense report attached.
 
+## 🚀 Quick Start - Testing on Your Device
+
+**Are you trying to test the app on your Google Pixel 6a?**
+
+👉 **[READ THIS FIRST: QUICK_START_GUIDE.md](QUICK_START_GUIDE.md)** 👈
+
+This guide explains exactly WHERE and HOW to run the diagnostic scripts (spoiler: in your PC's Command Prompt/Terminal, not Android Studio!)
+
+**🔧 Android Studio open and device connected there?**
+
+👉 **[Android Studio ADB Conflict Solution](ANDROID_STUDIO_ADB_CONFLICT.md)** 👈
+
+Your phone settings are fine! Just use Android Studio's built-in Terminal. Easy fix!
+
 ## Features
 
 - **Camera Integration**: Capture receipt photos directly in the app
@@ -13,7 +27,7 @@ An Android application that uses OCR (Optical Character Recognition) to automati
 ## Technical Stack
 
 - **Language**: Kotlin
-- **Minimum SDK**: Android 7.0 (API 24)
+- **Minimum SDK**: Android 8.0 (API 26) - Updated for compatibility
 - **Target SDK**: Android 14 (API 34)
 - **Key Libraries**:
   - CameraX for camera functionality
