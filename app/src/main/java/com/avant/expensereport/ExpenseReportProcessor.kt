@@ -16,8 +16,26 @@ class ExpenseReportProcessor {
         var outputStream: FileOutputStream? = null
         
         try {
+            // Validate template file
+            if (!templateFile.exists()) {
+                throw IllegalArgumentException("Template file does not exist: ${templateFile.absolutePath}")
+            }
+            if (templateFile.length() == 0L) {
+                throw IllegalArgumentException("Template file is empty")
+            }
+            
+            // Validate receipt data
+            if (receiptData.items.isEmpty()) {
+                throw IllegalArgumentException("Receipt has no items to process")
+            }
+            
             inputStream = FileInputStream(templateFile)
             workbook = XSSFWorkbook(inputStream)
+            
+            // Validate workbook has sheets
+            if (workbook.numberOfSheets == 0) {
+                throw IllegalStateException("Excel template has no sheets")
+            }
             
             // Try to get the sheet by name, fall back to first sheet if not found
             val sheet = workbook.getSheet("Expense Report") ?: workbook.getSheetAt(0)
@@ -36,40 +54,76 @@ class ExpenseReportProcessor {
             // We'll add items in the "Travel" section or appropriate category
             
             val startRow = 41 // Row 42 in Excel (0-indexed)
+            val maxRows = 129  // Maximum row in expense area
+            var itemsProcessed = 0
             
             receiptData.items.forEachIndexed { index, item ->
                 val row = startRow + index
-                if (row < 129) { // Stay within the expense area (rows 42-129)
-                    // Date (Column B)
-                    setCellValue(sheet, row, 1, receiptData.date)
-                    
-                    // From/To/Purpose (Columns C, D, E)
-                    setCellValue(sheet, row, 2, receiptData.merchantName)
-                    setCellValue(sheet, row, 3, receiptData.address)
-                    setCellValue(sheet, row, 4, item.description)
-                    
-                    // Cost in Local Currency (Column F)
-                    setCellValue(sheet, row, 5, item.amount)
-                    
-                    // Exchange Rate (Column G) - 1.0 for same currency
-                    setCellValue(sheet, row, 6, 1.0)
-                    
-                    // USD amount will be calculated by formula in column H
-                    
-                    // Account Code (Column M) - Default to "8464 - Meals & Entertainment"
-                    // User can change this in Excel
-                    setCellValue(sheet, row, 12, "8464 - Meals & Entertainment")
+                if (row < maxRows) {
+                    try {
+                        // Date (Column B)
+                        setCellValue(sheet, row, 1, receiptData.date)
+                        
+                        // From/To/Purpose (Columns C, D, E)
+                        setCellValue(sheet, row, 2, receiptData.merchantName)
+                        setCellValue(sheet, row, 3, receiptData.address)
+                        setCellValue(sheet, row, 4, item.description)
+                        
+                        // Cost in Local Currency (Column F)
+                        setCellValue(sheet, row, 5, item.amount)
+                        
+                        // Exchange Rate (Column G) - 1.0 for same currency
+                        setCellValue(sheet, row, 6, 1.0)
+                        
+                        // USD amount will be calculated by formula in column H
+                        
+                        // Account Code (Column M) - Default to "8464 - Meals & Entertainment"
+                        // User can change this in Excel
+                        setCellValue(sheet, row, 12, "8464 - Meals & Entertainment")
+                        
+                        itemsProcessed++
+                    } catch (e: Exception) {
+                        // Log error but continue with other items
+                        System.err.println("Error processing item $index: ${e.message}")
+                    }
+                } else {
+                    System.err.println("Warning: Exceeded maximum rows. ${receiptData.items.size - itemsProcessed} items not added.")
+                    return@forEachIndexed
                 }
             }
+            
+            if (itemsProcessed == 0) {
+                throw IllegalStateException("No items were successfully added to the expense report")
+            }
+            
+            // Ensure output directory exists
+            outputFile.parentFile?.mkdirs()
             
             // Save the modified workbook
             outputStream = FileOutputStream(outputFile)
             workbook.write(outputStream)
+            outputStream.flush()
+            
+        } catch (e: Exception) {
+            // Re-throw with more context
+            throw RuntimeException("Failed to create expense report: ${e.message}", e)
         } finally {
             // Ensure all resources are closed properly
-            outputStream?.close()
-            workbook?.close()
-            inputStream?.close()
+            try {
+                outputStream?.close()
+            } catch (e: Exception) {
+                System.err.println("Error closing output stream: ${e.message}")
+            }
+            try {
+                workbook?.close()
+            } catch (e: Exception) {
+                System.err.println("Error closing workbook: ${e.message}")
+            }
+            try {
+                inputStream?.close()
+            } catch (e: Exception) {
+                System.err.println("Error closing input stream: ${e.message}")
+            }
         }
     }
     

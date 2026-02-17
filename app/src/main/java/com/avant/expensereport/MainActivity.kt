@@ -62,19 +62,38 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun checkPermissions(): Boolean {
-        return ContextCompat.checkSelfPermission(
+        val cameraPermission = ContextCompat.checkSelfPermission(
             this, Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
+        
+        // For Android 13+ (API 33+), check READ_MEDIA_IMAGES instead of READ_EXTERNAL_STORAGE
+        val storagePermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_MEDIA_IMAGES
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+        
+        return cameraPermission && storagePermission
     }
     
     private fun requestPermissions() {
-        requestPermissionLauncher.launch(
+        val permissions = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.READ_MEDIA_IMAGES
+            )
+        } else {
             arrayOf(
                 Manifest.permission.CAMERA,
                 Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
             )
-        )
+        }
+        requestPermissionLauncher.launch(permissions)
     }
     
     private fun startCamera() {
@@ -143,7 +162,44 @@ class MainActivity : AppCompatActivity() {
         
         lifecycleScope.launch {
             try {
-                val bitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
+                // Check file exists and is readable
+                if (!imageFile.exists() || !imageFile.canRead()) {
+                    withContext(Dispatchers.Main) {
+                        binding.tvStatus.text = "Error: Cannot read image file"
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Cannot read image file. Please try again.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    return@launch
+                }
+                
+                // Decode bitmap with size check
+                val options = BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+                BitmapFactory.decodeFile(imageFile.absolutePath, options)
+                
+                // Calculate inSampleSize to reduce memory usage for large images
+                val maxDimension = 2048
+                var inSampleSize = 1
+                if (options.outHeight > maxDimension || options.outWidth > maxDimension) {
+                    val halfHeight = options.outHeight / 2
+                    val halfWidth = options.outWidth / 2
+                    while (halfHeight / inSampleSize >= maxDimension && 
+                           halfWidth / inSampleSize >= maxDimension) {
+                        inSampleSize *= 2
+                    }
+                }
+                
+                // Decode the actual bitmap with reduced size if needed
+                val decodeOptions = BitmapFactory.Options().apply {
+                    this.inSampleSize = inSampleSize
+                    inPreferredConfig = Bitmap.Config.RGB_565  // Use less memory
+                }
+                
+                val bitmap = BitmapFactory.decodeFile(imageFile.absolutePath, decodeOptions)
                 if (bitmap == null) {
                     withContext(Dispatchers.Main) {
                         binding.tvStatus.text = "Error: Failed to load image"
@@ -158,12 +214,24 @@ class MainActivity : AppCompatActivity() {
                 
                 val receiptData = extractTextFromImage(bitmap)
                 
+                // Recycle bitmap to free memory
+                bitmap.recycle()
+                
                 withContext(Dispatchers.Main) {
                     binding.tvStatus.text = "Receipt processed!"
                     displayReceiptData(receiptData)
                     
                     // Copy template and fill it
                     fillExpenseReport(receiptData, imageFile)
+                }
+            } catch (e: OutOfMemoryError) {
+                withContext(Dispatchers.Main) {
+                    binding.tvStatus.text = "Error: Image too large"
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Image is too large. Please try with a smaller image.",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
