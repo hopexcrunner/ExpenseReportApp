@@ -146,6 +146,18 @@ object ReceiptParser {
             }
         }
         
+        // If no items found, create a default item with the total amount
+        if (items.isEmpty()) {
+            items.add(
+                LineItem(
+                    description = "Receipt items",
+                    quantity = 1.0,
+                    unitPrice = 0.0,
+                    amount = 0.0
+                )
+            )
+        }
+        
         return items
     }
     
