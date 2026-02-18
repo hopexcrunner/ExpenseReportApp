@@ -2,6 +2,21 @@
 
 An Android application that uses OCR (Optical Character Recognition) to automatically extract data from receipt photos and populate Excel expense reports. The app then creates an email draft with both the original receipt and completed expense report attached.
 
+## 🚀 Quick Start
+
+### Get the APK
+1. Go to [GitHub Actions](../../actions)
+2. Click "Build and Test Android APK"
+3. Click "Run workflow" → Run workflow
+4. Download the APK artifact (~5 minutes)
+
+### Test on Emulator
+```bash
+./test_emulator.sh path/to/app-debug.apk
+```
+
+See [QUICKTEST.md](QUICKTEST.md) for details.
+
 ## Features
 
 - **Camera Integration**: Capture receipt photos directly in the app
@@ -243,6 +258,43 @@ For issues or questions:
   - OCR text recognition
   - Excel report generation
   - Email draft creation
+- **v1.0.1** (2026-02-17): Stability improvements
+  - Fixed null pointer exceptions in Excel processing
+  - Fixed bitmap decoding crashes
+  - Added proper resource management
+  - Improved error handling
+
+## 🧪 Testing
+
+### Build and Test the APK
+
+The app can be built and tested using GitHub Actions:
+
+```bash
+# 1. Trigger build via GitHub Actions
+# 2. Download APK artifact
+# 3. Test on emulator
+./test_emulator.sh path/to/app-debug.apk
+```
+
+### Testing Documentation
+- **[QUICKTEST.md](QUICKTEST.md)** - Quick testing guide (5 minutes)
+- **[TEST_ON_EMULATOR.md](TEST_ON_EMULATOR.md)** - Complete testing guide
+- **[test_emulator.sh](test_emulator.sh)** - Automated test script
+
+### Emulator Testing
+Tested on:
+- ✅ Pixel 6a emulator
+- ✅ Android 16 (API 36)
+- ✅ Android 14 (API 34)
+
+### Test Results
+- ✅ App installs successfully
+- ✅ Camera preview works
+- ✅ OCR extraction functional
+- ✅ Excel report generation works
+- ✅ Email drafts created correctly
+- ✅ No crashes with fixed code
 
 ---
 

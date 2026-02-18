@@ -21,8 +21,8 @@ object ReceiptParser {
         // Extract total amount
         val totalAmount = extractTotal(lines)
         
-        // Extract line items
-        val items = extractLineItems(lines)
+        // Extract line items (pass total for fallback)
+        val items = extractLineItems(lines, totalAmount)
         
         // Extract tax
         val taxAmount = extractTax(lines)
@@ -117,7 +117,7 @@ object ReceiptParser {
         return maxAmount
     }
     
-    private fun extractLineItems(lines: List<String>): List<LineItem> {
+    private fun extractLineItems(lines: List<String>, totalAmount: Double): List<LineItem> {
         val items = mutableListOf<LineItem>()
         
         // Pattern: description followed by quantity x price = amount
@@ -144,6 +144,18 @@ object ReceiptParser {
                     )
                 )
             }
+        }
+        
+        // If no items found, create a default item with the total amount
+        if (items.isEmpty()) {
+            items.add(
+                LineItem(
+                    description = "Manual entry required",
+                    quantity = 1.0,
+                    unitPrice = totalAmount,
+                    amount = totalAmount
+                )
+            )
         }
         
         return items
